@@ -1,0 +1,183 @@
+<script type="text/javascript" src="assets/js/vis.min.js"></script>
+
+<div style="height:300px">
+    <p>
+        <div id="mynetwork" style="height:300px"></div>
+    </p>
+</div>
+
+</br>
+<div class="container">
+    
+    <center>
+        <a class="btn btn-primary" href="createur_graphe">Créez votre propre graphe !</a> 
+    </center>
+    
+    <br><br>
+    
+    <div class="row">
+        <div class="col-md-4">
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <h3 class="panel-title">Créer un graphe de flot de contrôle</h3>
+              </div>
+              <div class="panel-body">
+                flowppy vous permet de générer en ligne le graphe de flot de contrôle de votre programme, de le visualiser et de le sauvegarder au format de votre choix.
+              </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <h3 class="panel-title">Un graphe interactif</h3>
+              </div>
+              <div class="panel-body">
+                flowppy offre la possibilité de d'afficher le détail des noeuds et des transitions du graphe. De plus, vous pourrez agencer la disposition des noeuds comme bon vous semble ainsi que de modifier divers autres paramètres.
+              </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <h3 class="panel-title">Parcourir un graphe pas à pas </h3>
+              </div>
+              <div class="panel-body">
+                Le programme pourra être débogué sous vos yeux, en suivant l'avancement sur le graphe. Vous avez même la possibilité d'exécuter des commandes GDB !
+              </div>
+            </div>
+        </div>
+    </div>
+</div>
+    
+        <script type="text/javascript">
+            function draw() {
+       
+                var nodes = [
+                    {id: 1, label: '<start>', shape: 'box'},
+                    {id: 2, label: '[0x0 (0x400440)] xor    %ebp,%ebp\n[0x2 (0x400442)] mov    %rdx,%r9\n[0x5 (0x400445)] pop    %rsi\n[0x6 (0x400446)] mov    %rsp,%rdx\n[0x9 (0x400449)] and    $0xfffffffffffffff0,%rsp\n[0xd (0x40044d)] push   %rax\n[0xe (0x40044e)] push   %rsp\n[0xf (0x40044f)] mov    $0x4005e0,%r8\n[0x16 (0x400456)] mov    $0x400570,%rcx\n[0x1d (0x40045d)] mov    $0x40052d,%rdi'},
+            		{id: 3, label: '[0x4c (0x40048c)] test   %rax,%rax'},
+            		{id: 4, label: '%rsp,%rdx\n[0x9 (0x400449)] and    $0xfffffffffffffff0,%rsp\n[0xd (0x40044d)] push   %rax\n[0xe (0x40044e)] push   %rsp\n[0xf (0x40044f)] mov    $0x4005e0,%r8\n[0x16 (0x400456)] mov    $0x400570,%rcx\n[0x1d (0x40045d)] mov    $0x40052d,%rdi'},
+            		{id: 5, label: '$0xfffffffffffffff0,%rsp\n[0xd (0x40044d)] push   %rax\n[0xe (0x40044e)] push   %rsp\n[0xf (0x40044f)] mov    $0x4005e0,%r8\n[0x16 (0x400456)] mov    $0x400570,%rcx\n[0x1d (0x40045d)] mov    $0x40052d,%rdi'},
+            		{id: 6, label: '[0x45 (0x400485)] pop    %rbp\n[0x46 (0x400486)] retq  '},
+            	 ];
+    
+                // create some edges
+                var edges = [
+                    {from: 1, to: 2}, 
+        		    {from: 1, to: 3},
+        		    {from: 2, to: 4},
+        		    {from: 3, to: 4},
+        		    {from: 4, to: 5},
+        		    {from: 5, to: 6},
+        		    
+                ];
+    
+                var container = document.getElementById('mynetwork');
+          var data = {
+            nodes: nodes,
+            edges: edges
+          };
+          
+         var options = 
+    	   {
+    	       autoResize: true,
+                height: '100%',
+                width: '100%', 
+    
+    	  		interaction:{
+                        zoomView: false,
+                        dragView: false,
+                    },
+    				layout: {
+    				improvedLayout: true,
+    					hierarchical: {
+    						enabled:true,
+    						levelSeparation: 500,
+    						
+          			blockShifting: true,
+          			edgeMinimization: true,
+    					  direction: 'LR',   // UD, DU, LR, RL
+    					  sortMethod: 'directed',
+    					},
+    				},
+    		physics:{
+    			enabled: true,
+    		hierarchicalRepulsion: {
+    	      centralGravity: 10,
+    	      springLength: 400,
+    	      nodeDistance: 400,
+    	      damping: 0.1,
+    	    },
+    	   
+    	    
+    	    
+    	    
+    		},
+    		nodes : {
+    			shape: 'box',
+    			color: {
+    				border: "#000000",
+    				background: "#ffffff",
+    				
+    				highlight:{
+    					border: "#000000",
+    					background: "#BBBBBB"
+    				}
+    			}
+    		},
+    		edges: {
+    			hoverWidth: 2,
+    			physics: true,
+    			selectionWidth:5,
+    			arrows: 
+    			{
+    			  to:     {enabled: true},
+    			},
+    			smooth: 
+    			{
+    				enabled: true,
+    				type: "cubicBezier",
+    				roundness: 0.7,
+    			}
+    		},
+    	  };
+          var network = new vis.Network(container, data, options);
+    
+    /*            var container = document.getElementById('mynetwork');
+                var data = {
+                    nodes: nodes,
+                    edges: edges
+                };
+                var options = {
+                    
+                    clickToUse: true,
+                    
+                    interaction:{
+                        zoomView: false,
+                        dragView: false,
+                    },
+                    nodes: {
+                        shape: 'dot',
+                        size: 16
+                    },
+                    physics: {
+                        forceAtlas2Based: {
+                            gravitationalConstant: -26,
+                            centralGravity: 0.005,
+                            springLength: 230,
+                            springConstant: 0.18
+                        },
+                        maxVelocity: 146,
+                        solver: 'forceAtlas2Based',
+                        timestep: 0.35,
+                        stabilization: {iterations: 150}
+                    }
+                };
+                var network = new vis.Network(container, data, options);
+            
+    */
+    }
+    draw();
+    </script>

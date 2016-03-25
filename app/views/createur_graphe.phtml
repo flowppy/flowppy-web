@@ -1,0 +1,564 @@
+ <style type="text/css">
+   html, body
+   {
+   	height: 100%;
+   	position: relative;
+   }
+   
+   h3{
+   	text-align: center;
+   }
+   
+   pre#display_select
+   {
+   	width: 100%;
+   	background-color: transparent;
+   	border-width: 0px;
+   }
+   
+   .page-header
+   {
+   	margin-top: 0px;
+   }
+   
+   .container
+   {
+   	width: 90%;
+   }
+   
+    #graphe {
+      width: 100%;
+      height: 85%;
+      border: 1px solid lightgray;
+      background-color: white;
+    }
+    
+    #displayDetail{
+    	right:0px;
+    	position: absolute;
+    	float: right;
+    	width: 0%;
+    	height : 50vh;
+    	border: 1px solid lightgray;
+    	background-color: #E6E6E6;
+    	visibility : hidden;
+    	font-weight : normal;
+    }
+    
+    .commandpre
+    {
+	    border: none;
+	    padding: 0px;
+	    background-color: transparent;
+    }
+    
+    #stepPanel{
+   	    right: 0px;
+   	    top:450px;
+   		position: absolute;
+   		float: right;
+    	width: 0%;
+    	height : 50vh;
+    	border: 1px solid lightgray;
+    	background-color: #E6E6E6;
+    	visibility : hidden;
+    	font-weight : normal;
+    }
+    
+    #display{
+    	overflow: scroll;
+    	margin-top:15px;
+    	font-weight : normal;
+    	height : 80%;
+    }
+    
+	#agrandir{
+		z-index: 10;
+		position: absolute;
+		top:10;
+		right:30;
+		width:40px;
+		height:40px;
+	}
+	
+	.checkbox
+	{
+		display: inline;
+	}
+	
+</style>
+<script type="text/javascript" src="assets/js/plupload/plupload.full.min.js"></script>
+<script type="text/javascript" src="assets/js/vis.min.js"></script>
+<script type="text/javascript" src="assets/js/stepbystep.js"></script>
+<link rel="stylesheet" href="assets/js/easy-autocomplete/easy-autocomplete.min.css">
+
+<div id="uploadfile" class="container" style="margin: auto; position: absolute; top: 50%; left: 50%; -webkit-transform: translate(-50%, -50%); -moz-transform: translate(-50%, -50%); -transform: translate(-50%, -50%);">
+    <div class="jumbotron">
+        <h1>Créez votre graphe</h1>
+        <p>flowppy va vous permettre de générer votre propre graphe de flot de contrôle dynamique.</br>
+        Pour cela, cliquez sur "Parcourir..." et choisissez votre fichier binaire.</br>
+        Enfin, validez en cliquant sur "Ouvrir" puis patientez !</p>
+        <p>
+            <div id="container">
+                <a class="btn btn-primary" id="browse" href="javascript:;">Parcourir...</a>
+            </div>
+        </p>
+    </div>
+</div>
+
+<div id="loader" style="display: none; margin: auto; position: absolute; top: 50%; left: 50%; -webkit-transform: translate(-50%, -50%); -moz-transform: translate(-50%, -50%); -transform: translate(-50%, -50%);">
+    <center><img src="assets/images/Preloader_7.gif">
+    <h3 id="progress">Envoi du fichier...</h3></center>
+</div>
+
+<div id="grapheContainer" style="display: none;" class='container'>
+<div class='row'>
+	<div class='col-md-3'>
+		<div class="panel panel-primary">
+			<div class="panel-heading">
+				<h3 class="panel-title" >Options du graphe</h3>
+			</div>
+			
+			<div class="panel-body">
+				<label>
+					<input type="checkbox" id="physicsBox" class="checkbox" onclick="togglePhysics(this)" checked="checked">&nbsp;Activer la physique</input><br>
+					<input type="checkbox" class="checkbox" onclick="toggleHierarchy(this)" checked="checked">&nbsp;Activer la hiérarchie</input>
+					<br/><br/>Télécharger au format : <a id="pnglink" href="#" >PNG</a>&nbsp;<a id="svglink" href="#" >SVG</a>&nbsp;<a id="dotlink" href="#" >DOT</a>&nbsp<a id="jsonlink" href="#" >JSON</a>
+				</label>
+			</div>
+				
+		</div>
+		<div class="panel panel-primary">
+			<div class="panel-heading">
+				<h3 class="panel-title" >Exécution pas à pas</h3>
+			</div>
+			<div class="panel-body">
+
+				<div>
+					<button id="restartButton" type="button" onclick="restart(this)" class="btn btn-primary btn-xs" disabled="disabled">Redémarrer</button><button id="nextButton" type="button" onclick="next(this)" class="btn btn-primary btn-xs pull-right">Démarrer ></button>
+				</div>
+				<div style="display: none;" id="gdbcontrols">
+					<hr>
+					<p><b>Instruction courante :</b> <span id="currentinstruction"></span></p>
+					<div class="row">
+						<div class="col-md-9">
+							<input id="commandfield" type="text" disabled="disabled" placeholder="Commande GDB" class="form-control"/>
+						</div>
+						<div class="col-md-3" style="padding-left: 0px !important;">
+							<a href="#" class="btn btn-info btn-sm" style="width: 100%;" id="gdbCommandButton" onclick="gdbCommand();">Envoyer</a>
+						</div>
+					</div>
+					<small><a href="#" data-toggle="modal" data-target="#commandsModal">Liste des commandes autorisées</a></small><br>
+					<br>
+					<pre id="gdboutput"></pre>
+				</div>
+				
+
+			</div>
+			
+			
+		</div>
+		<div class="panel panel-primary" id="display_select_panel" style="display: none; background-color: #f5f5f5;">
+			<div class="panel-heading">
+				<h3 class="panel-title" >Détails sur le noeud sélectionné</h3>
+			</div>
+			<div class="panel-body">
+				<pre id="display_select"></pre>
+			</div>
+		</div>
+	</div>
+	<div class='col-md-9' id="graphcol">
+		 <button type="button" onclick="toggleFullscreen();" class="btn btn-default" id="agrandir"><span id="resize" class="glyphicon glyphicon-resize-full"></span></button>
+		<div id="graphe"></div>
+	</div>
+</div>
+
+<div class="modal fade" id="commandsModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Fermer"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title">Commandes autorisées</h4>
+      </div>
+      <div class="modal-body">
+        <table class="table">
+        	<thead>
+        		<tr>
+        			<th>Nom</th>
+        			<th>Description</th>
+        		</tr>
+        	</thead>
+        	<tbody id="commandes_autorisees_table">
+        	</tbody>
+        </table>
+      </div>
+      <div class="modal-footer">
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="text/javascript">
+
+    var identifier = "";
+    var graph;
+    
+    var network;
+	var stepManager;
+	
+	var data;
+	var nodesData
+    var edgesData;
+    
+    var started = false;
+    
+    var currentInstruction;
+    
+    var fullscreen = false;
+    
+    function toggleFullscreen()
+    {
+    	if (!fullscreen)
+    	{
+	    	$("#graphcol").removeClass("col-md-9");
+	        $("#graphe").css({position: "absolute", left: '0px', top: '0px', bottom: "0px", right: "0px", width: "100%"});
+	        $("#graphe").height("100%");
+        	$("#resize").removeClass("glyphicon-resize-full");
+    		$("#resize").addClass("glyphicon-resize-small");
+    	}
+		else
+		{
+	    	$("#graphcol").addClass("col-md-9");
+	        $("#graphe").css({position: "static"});
+    		$("#resize").removeClass("glyphicon-resize-small");
+        	$("#resize").addClass("glyphicon-resize-full");
+    		$("#graphe").height("85%");
+		}
+		
+        fullscreen = !fullscreen;
+    }
+    
+    function onCurrentInstructionChanged()
+    {
+    	$("#currentinstruction").text(currentInstruction);
+    	
+    	
+    	
+    	
+    	var node = stepManager.findNode(currentInstruction);
+    	if(node == undefined){
+    		command("nexti");
+    	}else{
+    		//supression des anciens marqueur
+	    	if(stepManager.currentNode != null && node.id != stepManager.currentNode.id){
+	    		stepManager.currentNode.label = stepManager.currentNode.label.replace(stepManager.marqueurGauche, "");
+	    		stepManager.currentNode.label = stepManager.currentNode.label.replace(stepManager.marqueurDroit, "");
+	    		data.nodes.update({id: stepManager.currentNode.id, label: stepManager.currentNode.label, color : "#D2E5FF"});
+	    	}
+	    	//ajout de marqueur
+	    	console.log(currentInstruction);
+	    	var newLabel = stepManager.next(currentInstruction, node);
+	    //	stepManager.currentNodeLabel = newLabel;
+	    	console.log(newLabel);
+	    	data.nodes.update({id: node.id, label: newLabel, color: "#81BEF7"});
+	    	stepManager.currentNode = node;
+    	}
+    	
+    }
+    
+    function command(command)
+    {
+    	command = encodeURIComponent(command);
+    	$("#nextbutton").prop("disabled", true);
+    	$("#commandfield").prop("disabled", true);
+    	$("#restartButton").prop("disabled", true);
+    	$("#gdbCommandButton").prop("disabled", true);
+    	
+    	var req = $.ajax(endpoint("command/" + identifier + "/" + command))
+    	.done(function(){
+    		var json = JSON.parse(req.responseText);
+    		
+    		if (currentInstruction != json.instruction)
+    		{
+    			currentInstruction = json.instruction;
+    			onCurrentInstructionChanged();
+    		}
+    		
+	 		$("#gdbcontrols").show();
+			$("#gdboutput").text(json.output);
+			$("#commandfield").prop("disabled", false);
+			$("#commandfield").val("");	
+			$("#nextbutton").prop("disabled", false);
+			$("#restartButton").prop("disabled", false);
+			$("#gdbCommandButton").prop("disabled", false);
+    	}).fail(function()
+    	{
+    		alert("Impossible d'exécuter la commande, le serveur est probablement hors ligne.");
+    		
+			$("#commandfield").prop("disabled", false);
+			$("#nextbutton").prop("disabled", false);
+			$("#restartButton").prop("disabled", false);
+			$("#gdbCommandButton").prop("disabled", false);
+    	});
+    }
+	
+	function getLabel(id_search, nodes_list){
+			nodes_list = nodes_list.get({
+                              fields: ['id', 'label'],
+                            });
+			var found = false;
+			var cpt = 0;
+			var label = "";
+			while(!found && cpt < nodes_list.length){
+				if(id_search == nodes_list[cpt].id){
+					label = nodes_list[cpt].label;
+				}
+				cpt++;
+			}
+			return label;
+	}
+	
+	function restart(button)
+	{
+		command("start");
+	}
+	
+	
+	function next(button){
+			var req = $.ajax(endpoint("startgdb/" + identifier))
+				.done(function(){
+					if (started)
+					{
+						command("nexti");
+					
+					}
+					else
+					{
+						started = true;
+						$(button).text("Avancer d'une instruction >");
+					    $("#restartButton").prop("disabled", false);
+						command("start");
+						stepManager = new stepbystep(nodesData, edgesData);
+					}
+
+				}).fail(function()
+				{
+					alert("Impossible de démarrer GDB, le serveur est probablement hors ligne.");
+				});
+	}
+	
+	function toggleHierarchy(checkbox)
+	{
+		network.setOptions({ layout: {hierarchical:{ enabled: checkbox.checked }} });
+		togglePhysics(document.getElementById("physicsBox"));
+	}
+	
+	function togglePhysics(checkbox)
+	{
+		network.setOptions({ physics: checkbox.checked });
+	}
+
+    function endpoint(method)
+    {
+        return "https://flowppy-api-natinusala.c9users.io/" + method; 
+    }
+    
+    function refresh()
+    {
+        var req = $.ajax(endpoint("refresh/" + identifier)).done(function()
+        {
+        	if (!req.responseText == "OK")
+        	{
+        		if(!alert("Session expirée.")){window.location.reload();}
+        	}
+        }).fail(function()
+        {
+        	if(!alert("La page va maintenant se rafraîchir car la session n'a pu être maintenue et a probablement été supprimée.")){window.location.reload();}
+        });
+    }
+    
+    function gdbCommand()
+    {
+    	if ($("#commandfield").val() != "")
+    	{
+	    	command($("#commandfield").val());
+    	}
+    }
+    
+    function showGraph()
+    {
+	      //Lancement du timer de refresh
+	      setInterval(function(){refresh();}, 60000);
+	      
+	      //Préparation
+	      var container = document.getElementById('graphe');
+	      var options = 
+		   {
+		   	autoResize: true,
+		   	interaction:{hover:true},
+		   		
+			layout: {
+				improvedLayout: true,
+				hierarchical: {
+					enabled:true,
+					levelSeparation: 400,
+					direction: 'UD',   // UD, DU, LR, RL
+					sortMethod: 'directed',
+				},
+			},
+			physics:{
+				enabled: true,
+				hierarchicalRepulsion: {
+		     		centralGravity: 0.01,
+		    		springLength: 350,
+		    		springConstant: 0.01,
+		    		nodeDistance: 500,
+		    		damping: 0.5,
+		    	},
+			},
+			nodes : {
+				fixed: {
+					x: false,
+					y: false,
+				},
+				shape: 'box',
+				color: {
+					border: "#000000",
+					background: "#ffffff",
+					highlight:{
+						border: "#000000",
+						background: "#BBBBBB"
+					}
+				}
+			},
+			edges: {
+				hoverWidth: 2,
+				physics: true,
+				selectionWidth:5,
+				arrows: 
+				{
+				  to:     {enabled: true},
+				},
+				smooth: 
+				{
+					enabled: true,
+					type: "cubicBezier",
+					roundness: 0.7,
+				}
+			},
+		};
+
+
+	    
+	    nodesData = new vis.DataSet(graph.nodes);
+	    edgesData = new vis.DataSet(graph.edges);
+	    
+	    data = {
+	    	nodes: new vis.DataSet(graph.nodes),
+	    	edges: new vis.DataSet(graph.edges)
+	    }
+	    
+	    
+	    network = new vis.Network(container, data, options);
+	    
+		network.on("selectNode", function (params) {
+		        params.event = "[original event]";
+		        label_node = getLabel(params.nodes, nodesData);
+		        if (label_node != undefined && label_node != "")
+		        {
+					$("#display_select_panel").show();
+					document.getElementById('display_select').textContent =  label_node;
+		        }
+		        else
+		        {
+		        	$("#display_select_panel").hide();
+		        }
+		        
+		}); 
+		
+		//Affichage 
+	    $("#grapheContainer").show();
+		
+		//Liens
+		$("#pnglink").attr("href", endpoint("creategraph/" + identifier + "/png"));
+		$("#svglink").attr("href", endpoint("creategraph/" + identifier + "/svg"));
+		$("#dotlink").attr("href", endpoint("creategraph/" + identifier + "/dot"));
+		$("#jsonlink").attr("href", endpoint("creategraph/" + identifier + "/json"));
+		
+		    
+        //Interface
+	    $("#commandfield").keyup(function (e) {
+		    if (e.keyCode == 13) {
+		        gdbCommand();
+		    }
+		});
+		
+		var req = $.ajax({url : endpoint("allowedcommands"), dataType: "html"}).
+	      done(function(){
+	         var allowed_commands  = JSON.parse(req.responseText);
+	         var allowed_commands_names = [];
+	         
+	         for (var key in allowed_commands)
+	         {
+	         	allowed_commands_names.push(allowed_commands[key][0]);
+	         	$("#commandes_autorisees_table").append("<tr><td><pre class='commandpre'>" + allowed_commands[key][0] + "</pre></td><td>" + allowed_commands[key][1] + "</td></tr>");
+	         }
+	      });
+	     
+    }
+ 
+    var uploader = new plupload.Uploader({
+        browse_button: 'browse', // this can be an id of a DOM element or the DOM element itself
+        runtimes : 'html5,flash,silverlight,html4',
+        url : endpoint("upload"),
+ 
+        // Maximum file size
+        max_file_size : '10mb',
+ 
+        chunk_size: '1mb',
+ 
+        // Rename files by clicking on their titles
+        rename: true,
+         
+        // Sort files
+        sortable: true,
+ 
+        // Enable ability to drag'n'drop files onto the widget (currently only HTML5 supports that)
+        dragdrop: true,
+ 
+        // Views to activate
+        views: {
+            list: true,
+            thumbs: true, // Show thumbs
+            active: 'thumbs'
+        }
+    });
+     
+    uploader.init();
+     
+    uploader.bind('FilesAdded', function(up, files) {
+      $("#uploadfile").hide();    
+      $("#loader").show();
+      uploader.start();
+    });
+     
+    uploader.bind('Error', function(up, err) {
+      if(!alert("Impossible d'envoyer le fichier : " + err.message)){window.location.reload();}
+    });
+    
+    uploader.bind('FileUploaded', function(up, err, response) {
+      identifier = JSON.parse(response.response).result.identifier;
+      $("#progress").html("Désassemblage et <br>génération du graphe...");
+      var req = $.ajax({url : endpoint("creategraph/") + identifier + "/json", dataType: "html"}).
+	      done(function(){
+	          graph = JSON.parse("{" + req.responseText + "}");
+	          $("#loader").hide();
+	          showGraph();
+	      }).fail(function(req, textStatus, errorThrown){
+	      	if(!alert("Impossible de charger le graphe : " + errorThrown)){window.location.reload();}
+	   });
+	   
+	});
+	
+	
+</script>
